@@ -148,9 +148,16 @@ public final class McnpSocket implements Closeable {
 			if(maxRemoteTimeOffset != null) {
 				long offsetEstimation = (maxRemoteTimeOffset+minRemoteTimeOffset)/2;
 				System.out.println("Guessed offset "+offsetEstimation);
-				long unifiedTime = socket.localClock.getTime(); //Propose localClock as unifiedTime
 				final UUID proposalUUID = UUID.randomUUID();
-				TimeSyncProposalRequest timeSyncProposalRequest = new TimeSyncProposalRequest(proposalUUID, unifiedTime, unifiedTime+offsetEstimation);
+				
+//				IClock unifiedClock = socket.localClock;
+//				long unifiedTime = unifiedClock.getTime(); //Propose localClock as unifiedTime
+//				TimeSyncProposalRequest timeSyncProposalRequest = new TimeSyncProposalRequest(proposalUUID, unifiedTime, unifiedTime+offsetEstimation);
+				
+				//Propose server time as unified time
+				IClock unifiedClock = new OffsetClock(offsetEstimation, socket.localClock);
+				long unifiedTime = unifiedClock.getTime();
+				TimeSyncProposalRequest timeSyncProposalRequest = new TimeSyncProposalRequest(proposalUUID, unifiedTime, unifiedTime);
 				
 				TimeSyncProposalResponseListener proposalResponseListener 
 				= new TimeSyncProposalResponseListener(proposalUUID);
@@ -180,7 +187,7 @@ public final class McnpSocket implements Closeable {
 					//TODO could use same allocator in whole socket. (if so, send here.)
 					socket.onConnected(
 							address, 
-							socket.localClock, 
+							unifiedClock, 
 							proposalUUID, 
 							resourceHolder, 
 							messageConverter, 
